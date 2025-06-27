@@ -2,6 +2,8 @@ package edu.uky.cs.nil.sabre;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 import edu.uky.cs.nil.sabre.comp.CompiledProblem;
 import edu.uky.cs.nil.sabre.io.DefaultParser;
@@ -177,6 +179,12 @@ public class Session {
 	
 	/** The search's most recent result */
 	protected Result<?> result;
+	
+	/** The search's target number of solutions */
+	protected int numSolutions;
+	
+	/** The set of solutions found **/
+	protected HashSet<Result<?>> solutions = new LinkedHashSet<>();
 	
 	/**
 	 * Constructs a new session with a {@link DefaultParser default parser},
@@ -602,7 +610,7 @@ public class Session {
 	
 	private ProgressionPlanner pp() {
 		return cast(getPlanner(), PLANNER, ProgressionPlanner.class, "a heuristic progression planner");
-	}
+	}	
 	
 	/**
 	 * Returns the {@link Method search method} used by a {@link
@@ -718,6 +726,10 @@ public class Session {
 		getStatus().setMessage(EXPLANATION_PRUNING + ": " + value);
 	}
 	
+	public synchronized void setNumSolutions(int num) {
+		this.numSolutions = num;
+	}
+	
 	/**
 	 * Returns the session's current {@link Search search}, which was created
 	 * by the session's {@link #getPlanner() planner} for the session's {@link
@@ -737,7 +749,7 @@ public class Session {
 			search = planner.getSearch(problem, getStatus());
 			search.setStart(state);
 			search.setGoal(goal);
-			setResult(null);
+			setResult(null); // TODO why?
 			getStatus().setMessage("Search created for problem \"" + problem.name + "\".");
 		}
 		return search;
@@ -761,18 +773,21 @@ public class Session {
 	}
 	
 	/**
-	 * Returns the {@link Result result} of the most recent {@link
+	 * Returns the {@link Result result} of a new {@link
 	 * Search#get(Status) run} of the session's {@link #getSearch() current
 	 * search}. If the search has not been created, it will be created. If it
-	 * has not been run, it will be run.
+	 * has already been run, it will run again and find a different solution.
 	 * 
-	 * @return the result of the last search
+	 * @return a new search result
 	 * @throws IllegalStateException if the search needs to be run but it {@link
 	 * #getSearch() cannot be created}
 	 */
-	public synchronized Result<?> getResult() {
-		if(result == null)
-			result = getSearch().get(getStatus());
+	public synchronized Result<?> getResult() { 
+		result = getSearch().get(getStatus());
+		if(result.getSuccess()) {
+			solutions.add(result);
+			System.out.println(getPrinter().toString(getPlan(null)));
+		} 
 		return result;
 	}
 	
@@ -808,7 +823,7 @@ public class Session {
 	 * #getSearch() cannot be created}
 	 */
 	public synchronized boolean getSuccess() {
-		Result<?> result = getResult();
+		//Result<?> result = getNewResult();
 		return result.solution != null && Comparison.GREATER_THAN_OR_EQUAL_TO.test(result.utility, result.goal);
 	}
 	
@@ -822,7 +837,7 @@ public class Session {
 	 * #getSearch() cannot be created}
 	 */
 	public synchronized Solution<?> getSolution() {
-		Result<?> result = getResult();
+		//Result<?> result = getNewResult();
 		return notNull(result.solution, SOLUTION);
 	}
 	

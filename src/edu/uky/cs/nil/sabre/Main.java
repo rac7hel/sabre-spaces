@@ -98,6 +98,12 @@ public class Main {
 	 * ProgressionPlanner#getExplanationPruning() explanation pruning}
 	 */
 	public static final String EXPLANATION_PRUNING_KEY = "-ep";
+
+	/**
+	 * The command line key for {@link ??? }
+	 * 
+	 */
+	public static final String NUM_SOLUTIONS_KEY = "-n";
 	
 	/**
 	 * The abbreviation for {@link ProgressionPlanner.Method#BEST_FIRST
@@ -202,7 +208,8 @@ public class Main {
 		pad(TIME_LIMIT_KEY + " NUMBER") +				"max milliseconds the search can run; " + Planner.UNLIMITED_TIME + " for unlimited (default " + Planner.UNLIMITED_TIME + ")\n" +
 		pad(AUTHOR_TEMPORAL_LIMIT_KEY + " NUMBER") +	"max actions in a plan; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" +
 		pad(CHARACTER_TEMPORAL_LIMIT_KEY + " NUMBER") +	"max actions in a character's explanation for an action; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" +
-		pad(EPISTEMIC_LIMIT_KEY + " NUMBER") +			"max depth to explore theory of mind; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")";
+		pad(EPISTEMIC_LIMIT_KEY + " NUMBER") +			"max depth to explore theory of mind; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" + 
+		pad(NUM_SOLUTIONS_KEY + " NUMBER") + 			"number of solutions to search for; 0 for unlimited (default 1)";
 	
 	/**
 	 * A functional interface for changing a setting in a {@link Session
@@ -361,17 +368,24 @@ public class Main {
 			arguments.checkUnused();
 			// Run planner.
 			Result<?> result;
-			if(verbose)
-				result = Worker.get(s -> session.getResult(), session.getStatus());
-			else
-				result = session.getResult();
-			// Print result.
-			if(verbose)
-				System.out.println(session.getPrinter().toString(result));
-			else if(result.solution == null)
-				System.out.println(result.message);
-			else
-				System.out.println(session.getPrinter().toString(session.getPlan(null)));
+			while(session.numSolutions == 0 || session.solutions.size() < session.numSolutions) {
+				if(verbose)
+					result = Worker.get(s -> session.getResult(), session.getStatus());
+				else
+					result = session.getResult();
+				// Print results.
+				if(verbose)
+					System.out.println(session.getPrinter().toString(result) + "\n");
+				else if(result.solution == null)
+					System.out.println(result.message);
+				if(!result.getSuccess()) {
+					System.out.println(result);
+					break;
+				}
+			}
+			if(session.solutions != null)
+				System.out.println("solutions found: " + session.solutions.size());
+			
 		}
 		catch(Throwable t) {
 			if(t instanceof RuntimeException && t.getCause() != null)
@@ -424,6 +438,7 @@ public class Main {
 				session.setCost(new WeightedCost.Factory(session.getHeuristic(), arguments.getDouble(HEURISTIC_WEIGHT_KEY, 1)));
 			session.setExplanationPruning(arguments.getBoolean(EXPLANATION_PRUNING_KEY, true));
 		}
+		session.setNumSolutions(arguments.getInt(NUM_SOLUTIONS_KEY, 1));
 		if(verbose)
 			Worker.run(s -> session.getSearch(), session.getStatus());
 		else
