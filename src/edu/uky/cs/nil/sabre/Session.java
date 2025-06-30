@@ -2,6 +2,7 @@ package edu.uky.cs.nil.sabre;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 
@@ -183,8 +184,11 @@ public class Session {
 	/** The search's target number of solutions */
 	protected int numSolutions;
 	
-	/** The set of solutions found **/
+	/** The set of solutions found */
 	protected HashSet<Result<?>> solutions = new LinkedHashSet<>();
+
+	/** Where to write the output */
+	protected PrintStream output;
 	
 	/**
 	 * Constructs a new session with a {@link DefaultParser default parser},
@@ -726,8 +730,20 @@ public class Session {
 		getStatus().setMessage(EXPLANATION_PRUNING + ": " + value);
 	}
 	
+	/**
+	 * Sets the number of solutions the search should find before returning.
+	 * @param num the number of solutions
+	 */
 	public synchronized void setNumSolutions(int num) {
 		this.numSolutions = num;
+	}
+
+	/**
+	 * Sets the stream where output will be written.
+	 * @param out the output stream
+	 */
+	public synchronized void setOutput(PrintStream out) {
+		this.output = out;
 	}
 	
 	/**
@@ -749,7 +765,7 @@ public class Session {
 			search = planner.getSearch(problem, getStatus());
 			search.setStart(state);
 			search.setGoal(goal);
-			setResult(null); // TODO why?
+			setResult(null); 
 			getStatus().setMessage("Search created for problem \"" + problem.name + "\".");
 		}
 		return search;
@@ -786,7 +802,8 @@ public class Session {
 		result = getSearch().get(getStatus());
 		if(result.getSuccess()) {
 			solutions.add(result);
-			System.out.println(getPrinter().toString(getPlan(null)));
+			output.println(getPrinter().toString(getPlan(null)));
+			output.flush();
 		} 
 		return result;
 	}

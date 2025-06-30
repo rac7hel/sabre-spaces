@@ -1,5 +1,6 @@
 package edu.uky.cs.nil.sabre;
 
+import java.io.PrintStream;
 import java.lang.reflect.Array;
 
 import edu.uky.cs.nil.sabre.prog.GraphHeuristic;
@@ -100,10 +101,14 @@ public class Main {
 	public static final String EXPLANATION_PRUNING_KEY = "-ep";
 
 	/**
-	 * The command line key for {@link ??? }
-	 * 
+	 * The command line key for number of solutions
 	 */
 	public static final String NUM_SOLUTIONS_KEY = "-n";
+	
+	/**
+	 * The command line key for output file
+	 */
+	public static final String OUTPUT_KEY = "-o";
 	
 	/**
 	 * The abbreviation for {@link ProgressionPlanner.Method#BEST_FIRST
@@ -209,7 +214,8 @@ public class Main {
 		pad(AUTHOR_TEMPORAL_LIMIT_KEY + " NUMBER") +	"max actions in a plan; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" +
 		pad(CHARACTER_TEMPORAL_LIMIT_KEY + " NUMBER") +	"max actions in a character's explanation for an action; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" +
 		pad(EPISTEMIC_LIMIT_KEY + " NUMBER") +			"max depth to explore theory of mind; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" + 
-		pad(NUM_SOLUTIONS_KEY + " NUMBER") + 			"number of solutions to search for; 0 for unlimited (default 1)";
+		pad(NUM_SOLUTIONS_KEY + " NUMBER") + 			"number of solutions to search for; 0 for unlimited (default 1)\n" + 
+		pad(OUTPUT_KEY + " PATH") +                     "output file to write (optional)";
 	
 	/**
 	 * A functional interface for changing a setting in a {@link Session
@@ -385,6 +391,7 @@ public class Main {
 			}
 			if(session.solutions != null)
 				System.out.println("solutions found: " + session.solutions.size());
+			session.output.close();
 			
 		}
 		catch(Throwable t) {
@@ -439,6 +446,10 @@ public class Main {
 			session.setExplanationPruning(arguments.getBoolean(EXPLANATION_PRUNING_KEY, true));
 		}
 		session.setNumSolutions(arguments.getInt(NUM_SOLUTIONS_KEY, 1));
+		if(arguments.get(OUTPUT_KEY) != null)
+			session.setOutput(new PrintStream(arguments.get(OUTPUT_KEY)));
+		else
+			session.setOutput(System.out);
 		if(verbose)
 			Worker.run(s -> session.getSearch(), session.getStatus());
 		else
