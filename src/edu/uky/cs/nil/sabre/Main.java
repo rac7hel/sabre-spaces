@@ -1,5 +1,6 @@
 package edu.uky.cs.nil.sabre;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
 
@@ -101,12 +102,12 @@ public class Main {
 	public static final String EXPLANATION_PRUNING_KEY = "-ep";
 
 	/**
-	 * The command line key for number of solutions
+	 * The command line key for the number of solutions to find
 	 */
 	public static final String NUM_SOLUTIONS_KEY = "-n";
 	
 	/**
-	 * The command line key for output file
+	 * The command line key for the output directory
 	 */
 	public static final String OUTPUT_KEY = "-o";
 	
@@ -215,7 +216,7 @@ public class Main {
 		pad(CHARACTER_TEMPORAL_LIMIT_KEY + " NUMBER") +	"max actions in a character's explanation for an action; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" +
 		pad(EPISTEMIC_LIMIT_KEY + " NUMBER") +			"max depth to explore theory of mind; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" + 
 		pad(NUM_SOLUTIONS_KEY + " NUMBER") + 			"number of solutions to search for; 0 for unlimited (default 1)\n" + 
-		pad(OUTPUT_KEY + " PATH") +                     "output file to write (optional)";
+		pad(OUTPUT_KEY + " PATH") +                     "a directory for the output files (optional)";
 	
 	/**
 	 * A functional interface for changing a setting in a {@link Session
@@ -391,7 +392,7 @@ public class Main {
 			}
 			if(session.solutions != null)
 				System.out.println("solutions found: " + session.solutions.size());
-			session.output.close();
+			session.solutionsOut.close();
 			
 		}
 		catch(Throwable t) {
@@ -446,10 +447,15 @@ public class Main {
 			session.setExplanationPruning(arguments.getBoolean(EXPLANATION_PRUNING_KEY, true));
 		}
 		session.setNumSolutions(arguments.getInt(NUM_SOLUTIONS_KEY, 1));
-		if(arguments.get(OUTPUT_KEY) != null)
-			session.setOutput(new PrintStream(arguments.get(OUTPUT_KEY)));
-		else
-			session.setOutput(System.out);
+		session.setOutDir(arguments.get(OUTPUT_KEY));
+		if(session.outDir == null) 
+			session.setSolutionsOut(System.out);
+		else {
+			if(!(new File(session.outDir)).isDirectory())
+				throw Exceptions.directoryNotFound(session.outDir);
+			session.setSolutionsOut(new PrintStream(new File(session.outDir + "/solutions.txt")));
+		}
+
 		if(verbose)
 			Worker.run(s -> session.getSearch(), session.getStatus());
 		else

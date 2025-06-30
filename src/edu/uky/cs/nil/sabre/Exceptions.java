@@ -627,6 +627,17 @@ public class Exceptions {
 	}
 	
 	/**
+	 * Thrown when a {@link edu.uky.cs.nil.sabre.util.CommandLineArguments 
+	 * command line argument} is not a directory but should be.
+	 * 
+	 * @param path the path which is not a directory
+	 * @return an IllegalArgumentException
+	 */
+	public static final IllegalArgumentException directoryNotFound(String path) {
+		return new IllegalArgumentException("The directory \"" + path + "\" was not found.");
+	}
+	
+	/**
 	 * Thrown when a {@link edu.uky.cs.nil.sabre.util.CommandLineArguments a
 	 * command line argument} is not used for anything.
 	 * 

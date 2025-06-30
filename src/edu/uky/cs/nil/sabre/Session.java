@@ -187,8 +187,11 @@ public class Session {
 	/** The set of solutions found */
 	protected HashSet<Result<?>> solutions = new LinkedHashSet<>();
 
-	/** Where to write the output */
-	protected PrintStream output;
+	/** The output directory */
+	protected String outDir;
+	
+	/** The output stream for writing solutions */
+	protected PrintStream solutionsOut;
 	
 	/**
 	 * Constructs a new session with a {@link DefaultParser default parser},
@@ -739,11 +742,19 @@ public class Session {
 	}
 
 	/**
-	 * Sets the stream where output will be written.
+	 * Sets the output directory.
+	 * @param path the path to the output directory
+	 */
+	public synchronized void setOutDir(String path) {
+		this.outDir = path;
+	}
+	
+	/**
+	 * Sets the stream where solutions will be written.
 	 * @param out the output stream
 	 */
-	public synchronized void setOutput(PrintStream out) {
-		this.output = out;
+	public synchronized void setSolutionsOut(PrintStream out) {
+		this.solutionsOut = out;
 	}
 	
 	/**
@@ -802,8 +813,8 @@ public class Session {
 		result = getSearch().get(getStatus());
 		if(result.getSuccess()) {
 			solutions.add(result);
-			output.println(getPrinter().toString(getPlan(null)));
-			output.flush();
+			solutionsOut.println(getPrinter().toString(getPlan(null)));
+			solutionsOut.flush();
 		} 
 		return result;
 	}
