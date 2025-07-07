@@ -52,10 +52,10 @@ import edu.uky.cs.nil.sabre.util.Worker.Status;
  * value.</li>
  * <li>A heuristic graph does not model mutex relations. This is because
  * mutex relations are costly to check, and heuristic graphs are designed to be
- * fast enough to be reused frequently, such as in Jörg Hoffmann's Fast Forward
+ * fast enough to be reused frequently, such as in J&#246;rg Hoffmann's Fast Forward
  * heuristic.</li>
  * <li>Heuristic graphs generalize Blum and Furst's plan graphs as well as Blai
- * Bonet and Héctor Geffner's additive heuristic by allowing multiple possible
+ * Bonet and H&#0233;ctor Geffner's additive heuristic by allowing multiple possible
  * definitions of {@link CostNode a node's cost}. A {@link MaxGraph max graph}
  * is a heuristic graph where the cost of a conjunction is the maximum cost of
  * any of its conjuncts, similar to the levels of Blum and Furst's plan graph.

@@ -26,7 +26,7 @@ import edu.uky.cs.nil.sabre.util.Worker.Status;
  * heuristic progression search}, which solves a relaxed version of the planning
  * problem and uses the cost of the solution to that relaxed problem as an
  * approximation of the cost of solving the real problem. This heuristic is
- * inspired by Jörg Hoffmann's Fast Forward heuristic.
+ * inspired by J&#246;rg Hoffmann's Fast Forward heuristic.
  * <p>
  * The relaxed plan heuristic works initializing a {@link
  * edu.uky.cs.nil.sabre.hg.MaxGraph max heuristic graph} to the state it is

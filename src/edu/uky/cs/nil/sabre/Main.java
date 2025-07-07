@@ -2,6 +2,7 @@ package edu.uky.cs.nil.sabre;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Array;
 
 import edu.uky.cs.nil.sabre.prog.GraphHeuristic;
@@ -16,6 +17,8 @@ import edu.uky.cs.nil.sabre.search.Result;
 import edu.uky.cs.nil.sabre.search.Search;
 import edu.uky.cs.nil.sabre.util.CommandLineArguments;
 import edu.uky.cs.nil.sabre.util.Worker;
+import r7.sabre.spaces.distance.DistanceMatrix;
+import r7.sabre.spaces.distance.ActionJaccardDistance;
 
 /**
  * Configures a {@link Session session} according to command line arguments,
@@ -110,7 +113,13 @@ public class Main {
 	 * The command line key for the output directory
 	 */
 	public static final String OUTPUT_KEY = "-o";
-	
+
+	/**
+	 * The command line key for creating a {@link DistanceMatrix distance matrix} 
+	 * with the solution set
+	 */
+	public static final String DISTANCE_KEY = "-d";
+
 	/**
 	 * The abbreviation for {@link ProgressionPlanner.Method#BEST_FIRST
 	 * best-first search}
@@ -177,6 +186,12 @@ public class Main {
 	 * heuristic}
 	 */
 	public static final String RELAXED_PLAN_HEURISTIC_OPTION = "rp";
+
+	/**
+	 * The abbreviation for the {@link ActionJaccardDistance action jaccard} distance metric
+	 */
+	public static final String ACTION_JACCARD_OPTION = "aj";
+
 	
 	private static final String pad(String string) {
 		return String.format("%-13s", string);
@@ -216,8 +231,10 @@ public class Main {
 		pad(CHARACTER_TEMPORAL_LIMIT_KEY + " NUMBER") +	"max actions in a character's explanation for an action; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" +
 		pad(EPISTEMIC_LIMIT_KEY + " NUMBER") +			"max depth to explore theory of mind; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" + 
 		pad(NUM_SOLUTIONS_KEY + " NUMBER") + 			"number of solutions to search for; 0 for unlimited (default 1)\n" + 
-		pad(OUTPUT_KEY + " PATH") +                     "a directory for the output files (optional)";
-	
+		pad(OUTPUT_KEY + " PATH") +                     "a directory for the output files\n" +
+		pad(DISTANCE_KEY + " OPTION") +                 "calculate a distance matrix for the solution set using the given metric; options include:\n" + 
+		pad("   " + ACTION_JACCARD_OPTION) +            "action jaccard distance (default)";
+
 	/**
 	 * A functional interface for changing a setting in a {@link Session
 	 * session}.
@@ -393,7 +410,18 @@ public class Main {
 			if(session.solutions != null)
 				System.out.println("solutions found: " + session.solutions.size());
 			session.solutionsOut.close();
-			
+			if(arguments.contains(DISTANCE_KEY)) {
+				Solution<?>[] solutions = session.solutions.toArray(new Solution<?>[session.solutions.size()]);
+				DistanceMatrix matrix = new DistanceMatrix(solutions, session.distanceMetric);
+				String path = ".";
+				if(arguments.contains(OUTPUT_KEY))
+					path = arguments.get(OUTPUT_KEY);
+				PrintWriter csvWriter = new PrintWriter(new File(path + "/" + session.distanceMetric.name + ".csv"));
+				csvWriter.write(matrix.toString());
+				csvWriter.flush();
+				csvWriter.close();
+
+			}
 		}
 		catch(Throwable t) {
 			if(t instanceof RuntimeException && t.getCause() != null)
@@ -447,15 +475,24 @@ public class Main {
 			session.setExplanationPruning(arguments.getBoolean(EXPLANATION_PRUNING_KEY, true));
 		}
 		session.setNumSolutions(arguments.getInt(NUM_SOLUTIONS_KEY, 1));
-		session.setOutDir(arguments.get(OUTPUT_KEY));
-		if(session.outDir == null) 
+		if(arguments.contains(OUTPUT_KEY)) {
+			String outDir = arguments.get(OUTPUT_KEY);
+			if(outDir == null)
+				throw Exceptions.notSet(OUTPUT_KEY);
+			if(!(new File(outDir)).isDirectory())
+				throw Exceptions.directoryNotFound(outDir);
+			session.setSolutionsOut(new PrintStream(outDir + "/solutions.txt"));
+		} else
 			session.setSolutionsOut(System.out);
-		else {
-			if(!(new File(session.outDir)).isDirectory())
-				throw Exceptions.directoryNotFound(session.outDir);
-			session.setSolutionsOut(new PrintStream(new File(session.outDir + "/solutions.txt")));
+		if(arguments.contains(DISTANCE_KEY)) {
+			String metric = arguments.get(DISTANCE_KEY);
+			if(metric == null)
+				metric = ACTION_JACCARD_OPTION;
+			if(metric.equals(ACTION_JACCARD_OPTION))
+				session.setDistance(new ActionJaccardDistance());
+			else
+				throw Exceptions.failedToParseCommandLineArgument(DISTANCE_KEY, metric);
 		}
-
 		if(verbose)
 			Worker.run(s -> session.getSearch(), session.getStatus());
 		else

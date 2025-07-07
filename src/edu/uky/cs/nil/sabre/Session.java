@@ -3,8 +3,7 @@ package edu.uky.cs.nil.sabre;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
 
 import edu.uky.cs.nil.sabre.comp.CompiledProblem;
 import edu.uky.cs.nil.sabre.io.DefaultParser;
@@ -22,6 +21,7 @@ import edu.uky.cs.nil.sabre.search.Planner;
 import edu.uky.cs.nil.sabre.search.Result;
 import edu.uky.cs.nil.sabre.search.Search;
 import edu.uky.cs.nil.sabre.util.Worker.Status;
+import r7.sabre.spaces.distance.DistanceMetric;
 
 /**
  * A session gathers several important elements together and provides a single
@@ -181,17 +181,17 @@ public class Session {
 	/** The search's most recent result */
 	protected Result<?> result;
 	
-	/** The search's target number of solutions */
+	/** The search's target number of {@link Solution solutions} to find */
 	protected int numSolutions;
 	
-	/** The set of solutions found */
-	protected HashSet<Result<?>> solutions = new LinkedHashSet<>();
-
-	/** The output directory */
-	protected String outDir;
+	/** The set of {@link Solution solutions} found */
+	protected ArrayList<Solution<?>> solutions = new ArrayList<>();
 	
 	/** The output stream for writing solutions */
 	protected PrintStream solutionsOut;
+
+	/** The {@link DistanceMetric distance metric} with which to compare solutions */
+	protected DistanceMetric distanceMetric;
 	
 	/**
 	 * Constructs a new session with a {@link DefaultParser default parser},
@@ -742,19 +742,19 @@ public class Session {
 	}
 
 	/**
-	 * Sets the output directory.
-	 * @param path the path to the output directory
-	 */
-	public synchronized void setOutDir(String path) {
-		this.outDir = path;
-	}
-	
-	/**
 	 * Sets the stream where solutions will be written.
 	 * @param out the output stream
 	 */
 	public synchronized void setSolutionsOut(PrintStream out) {
 		this.solutionsOut = out;
+	}
+	
+	/**
+	 * Sets the distance metric with which to compare stories.
+	 * @param metric the distance metric
+	 */
+	public void setDistance(DistanceMetric metric) {
+		this.distanceMetric = metric;
 	}
 	
 	/**
@@ -812,7 +812,7 @@ public class Session {
 	public synchronized Result<?> getResult() { 
 		result = getSearch().get(getStatus());
 		if(result.getSuccess()) {
-			solutions.add(result);
+			solutions.add(result.solution);
 			solutionsOut.println(getPrinter().toString(getPlan(null)));
 			solutionsOut.flush();
 		} 
@@ -851,7 +851,6 @@ public class Session {
 	 * #getSearch() cannot be created}
 	 */
 	public synchronized boolean getSuccess() {
-		//Result<?> result = getNewResult();
 		return result.solution != null && Comparison.GREATER_THAN_OR_EQUAL_TO.test(result.utility, result.goal);
 	}
 	
@@ -865,8 +864,16 @@ public class Session {
 	 * #getSearch() cannot be created}
 	 */
 	public synchronized Solution<?> getSolution() {
-		//Result<?> result = getNewResult();
 		return notNull(result.solution, SOLUTION);
+	}
+	
+	/**
+	 * Returns the list of {@link Solution solutions} found by the search so far.
+	 * 
+	 * @return the solutions from all runs of the search
+	 */
+	public ArrayList<Solution<?>> getSolutions(){
+		return solutions;
 	}
 	
 	/**
