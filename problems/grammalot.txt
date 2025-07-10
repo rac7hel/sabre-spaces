@@ -1,0 +1,317 @@
+/**
+ * Save Gramma (Day/Night Version) 
+ * 
+ * This domain is a derivation of the Save Gramma problem (Ware et. al 2022). 
+ * It was modified by Rachelyn Farrell to include an element of time (a day/night
+ * transition) in order to evaluate methods using situation models that include a 
+ * time dimension. 
+ *  
+ * Tom needs a special potion from the merchant who works at the market. 
+ * Tom's cottage is connected to the market via a crossroads which also connects 
+ * to the merchant's house. There is a bandit lurking in the crossroads, who is 
+ * a known criminal. There is a guard at the market who wants to punish 
+ * criminals, but the guard does not initially know where the bandit is. At 
+ * night, the merchant takes all her possessions to her house and goes to sleep.
+ * 
+ * The preferred citation for the origin of this domain is:
+ *   Rachelyn Farrell, Mira Fisher, and Stephen G. Ware. Salience vectors 
+ *   for measuring distance between stories. In Proceedings of the 18th AAAI 
+ *   international conference on Artificial Intelligence and Interactive 
+ *   Digital Entertainment, pp. 95-104, 2022.
+ */
+
+type location;
+type character : location;
+type place : location;
+type time;
+type status;
+type item;
+type weapon : item;
+type coin : item;
+
+property location(character : character) : place;
+property location(item : item) : location;
+property status(character : character) : status;
+property armed(character : character) : boolean;
+property criminal(character : character) : boolean;
+property arrested(character : character) : boolean;
+property path(from : place, to : place) : boolean;
+property time() : time;
+
+entity Tom : character;
+entity Merchant : character;
+entity Guard : character;
+entity Bandit : character;
+entity Cottage : place;
+entity Crossroads : place;
+entity Market : place;
+entity Mansion : place;
+entity Day : time;
+entity Night : time;
+entity Awake : status;
+entity Asleep : status; 
+entity Dead : status;
+entity GuardSword : weapon;
+entity BanditSword : weapon;
+entity MerchantSword : weapon;
+entity Potion : item;
+entity TomCoin : coin;
+entity BanditCoin : coin;
+
+// entity Chest : container;
+
+action arrest(Guard, other : character, place : place, time : time){
+	precondition: 
+		other != Guard &
+		criminal(other) &
+		!arrested(other) &
+		location(Guard) == place &
+		location(other) == place &
+		status(Guard) == Awake &
+		status(other) == Awake &
+		time() == time;
+	effect: 
+		arrested(other) & 
+		location(other) = ?;
+	consenting: Guard;
+	observing(c : character): location(c) == place;
+};
+
+action attack(character : character, other : character, place : place, time : time) {
+	precondition:
+		character != other &
+		armed(character) & 
+		location(character) == place &
+		location(other) == place &
+		status(character) == Awake & 
+		status(other) != Dead &
+		time() == time;
+	effect:
+		status(other) = Dead & 
+		criminal(character);
+	consenting: character;
+	observing(c : character): location(c) == place;
+};
+
+action buy(character : character, Merchant, item : item, coin : coin, Market, Day) {
+	precondition:
+		character != Merchant &
+		item != coin &
+		location(item) == Merchant &
+		location(coin) == character & 
+		location(character) == Market &
+		location(Merchant) == Market &
+		status(character) == Awake &
+		status(Merchant) == Awake &
+		time() == Day;
+	effect:
+		location(item) = character &
+		location(coin) = Merchant;
+	consenting: character, Merchant;
+	observing(c : character): location(c) == Market;
+};
+
+action rob(character : character, other : character, item : item, place : place, time : time) {
+	precondition:
+		armed(character) &
+		!armed(other) &
+		location(item) == other &
+		location(character) == place &
+		location(other) == place &
+		status(character) == Awake &
+		status(other) == Awake &
+		time() == time;
+	effect:
+		location(item) = character &
+		criminal(character);
+	consenting: character;
+	observing(c : character): location(c) == place;
+};
+
+action take(character : character, other : character, item : item, place : place, time : time) {
+	precondition:
+		location(item) == other &
+		location(character) == place &
+		location(other) == place &
+		status(character) == Awake &
+		status(other) != Awake &
+		time() == time;
+	effect:
+		location(item) = character &
+		criminal(character);
+	consenting: character;
+	observing(c : character): location(c) == place;
+};
+
+action wait(Tom, place : place, Day){
+	precondition: 
+		location(Tom) == place &
+		status(Tom) == Awake &
+		time() == Day;
+	effect:
+		time() = Night &
+		status(Merchant) = Asleep &
+		location(Merchant) = Mansion &
+		location(Guard) = ?;
+	consenting: Tom;
+	observing(c: character): location(c) == place;
+};
+
+// action report(character : character, spot : place, place : place) {};
+
+// action take(character : character, item : item, Chest, Camp) {};
+
+action walk(character : character, from : place, to : place, time : time) {
+	precondition:
+		path(from, to) &
+		location(character) == from &
+		status(character) == Awake &
+		time() == time;
+	effect:
+		location(character) = to;
+	consenting: character;
+	observing(c : character): location(c) == from | location(c) == to;
+};
+
+trigger armed(character : character) {
+	precondition:
+		!armed(character) & 
+		exists(weapon : weapon)
+			location(weapon) == character;
+	effect:
+		armed(character);
+};
+
+trigger unarmed(character : character) {
+	precondition:
+		armed(character) & 
+		forall(weapon : weapon)
+			location(weapon) != character;
+	effect:
+		!armed(character);
+};
+
+trigger see_character_at(character : character, other : character, place : place) {
+	precondition:
+		status(character) == Awake &
+		location(character) == place &
+		location(other) == place &
+		believes(character, location(other)) != place;
+	effect:
+		believes(character, location(other)) = place;
+};
+
+trigger see_character_not_at(character : character, other : character, place : place) {
+	precondition:
+		status(character) == Awake &
+		location(character) == place &
+		location(other) != place &
+		believes(character, location(other)) == place;
+	effect:
+		believes(character, location(other)) = ?;
+};
+
+trigger see_item_on(character : character, item : item, other : character, place : place) {
+	precondition:
+		status(character) == Awake &
+		location(character) == place &
+		location(other) == place &
+		location(item) == other &
+		believes(character, location(item)) != other;
+	effect:
+		believes(character, location(item)) = other;
+};
+
+trigger see_item_not_on(character : character, item : item, other : character, place : place) {
+	precondition:
+		status(character) == Awake &
+		location(character) == place &
+		location(other) == place &
+		location(item) != other &
+		believes(character, location(item)) == other;
+	effect:
+		believes(character, location(item)) = ?;
+};
+
+trigger see_night(character: character){
+	precondition:
+		status(character) == Awake &
+		time() == Night &
+		believes(character, time()) != Night;
+	effect:
+		believes(character, time()) = Night &
+		believes(character, status(Merchant)) = Asleep &
+		believes(character, location(Merchant)) = Mansion &
+		believes(character, location(Guard)) = ?;
+};
+
+trigger path_exists(from : place, to : place) {
+	precondition:
+		path(from, to) &
+		!path(to, from);
+	effect:
+		path(to, from);
+};
+
+forall(character : character)
+	status(character) = Awake;
+criminal(Bandit);
+location(Bandit) = Crossroads;
+location(BanditCoin) = Bandit;
+location(BanditSword) = Bandit;
+location(Guard) = Market;
+location(GuardSword) = Guard;
+location(Potion) = Merchant;
+location(Merchant) = Market;
+location(MerchantSword) = Merchant;
+location(Tom) = Cottage;
+location(TomCoin) = Tom;
+time() = Day;
+path(Crossroads, Cottage);
+path(Crossroads, Market);
+path(Crossroads, Mansion);
+believes(Guard, location(Bandit)) = ?;
+believes(Tom, location(Bandit)) = ?;
+believes(Merchant, location(Bandit)) = ?;
+
+
+utility():
+	if(location(Potion) == Tom & location(Tom) == Cottage)
+		2
+	elseif(status(Tom) == Dead)
+		1
+	else
+		0;
+
+utility(Tom):
+	if(location(Potion) == Tom & location(Tom) == Cottage)
+		1
+	else
+   		0;
+
+utility(Merchant):
+	if(location(TomCoin) == Merchant & location(BanditCoin) == Merchant & !criminal(Merchant))
+		2
+	elseif((location(TomCoin) == Merchant | location(BanditCoin) == Merchant) & !criminal(Merchant))
+		1
+	else
+		0;
+
+utility(Guard):
+	if(!criminal(Guard) & arrested(Bandit) & (!criminal(Tom) | arrested(Tom)))
+		2
+	elseif((!criminal(Guard) & arrested(Bandit)) | (!criminal(Tom) | arrested(Tom)))
+		1
+	else
+		0;
+
+utility(Bandit):
+	if(location(BanditCoin) == Bandit) 1 else 0 + 
+	if(location(TomCoin) == Bandit) 1 else 0;
+	
+//	if(location(BanditCoin) == Bandit & location(TomCoin) == Bandit)
+//		2
+//	elseif(location(BanditCoin) == Bandit | location(TomCoin) == Bandit)
+//		1
+//	else
+//		0;
