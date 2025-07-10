@@ -2,7 +2,6 @@ package edu.uky.cs.nil.sabre;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.lang.reflect.Array;
 
 import edu.uky.cs.nil.sabre.prog.GraphHeuristic;
@@ -17,6 +16,7 @@ import edu.uky.cs.nil.sabre.search.Result;
 import edu.uky.cs.nil.sabre.search.Search;
 import edu.uky.cs.nil.sabre.util.CommandLineArguments;
 import edu.uky.cs.nil.sabre.util.Worker;
+
 import r7.sabre.spaces.distance.DistanceMatrix;
 import r7.sabre.spaces.distance.ActionJaccardDistance;
 
@@ -232,7 +232,7 @@ public class Main {
 		pad(EPISTEMIC_LIMIT_KEY + " NUMBER") +			"max depth to explore theory of mind; " + Planner.UNLIMITED_DEPTH + " for unlimited (default " + Planner.UNLIMITED_DEPTH + ")\n" + 
 		pad(NUM_SOLUTIONS_KEY + " NUMBER") + 			"number of solutions to search for; 0 for unlimited (default 1)\n" + 
 		pad(OUTPUT_KEY + " PATH") +                     "a directory for the output files\n" +
-		pad(DISTANCE_KEY + " OPTION") +                 "calculate a distance matrix for the solution set using the given metric; options include:\n" + 
+		pad(DISTANCE_KEY + " OPTION") +                 "calculate distances between solutions using the given metric; options include:\n" + 
 		pad("   " + ACTION_JACCARD_OPTION) +            "action jaccard distance (default)";
 
 	/**
@@ -392,7 +392,8 @@ public class Main {
 			arguments.checkUnused();
 			// Run planner.
 			Result<?> result;
-			while(session.numSolutions == 0 || session.solutions.size() < session.numSolutions) {
+			int n = session.getNumSolutions();
+			while(n == 0 || session.getSolutions().size() < n) {
 				if(verbose)
 					result = Worker.get(s -> session.getResult(), session.getStatus());
 				else
@@ -407,20 +408,21 @@ public class Main {
 					break;
 				}
 			}
-			if(session.solutions != null)
-				System.out.println("solutions found: " + session.solutions.size());
-			session.solutionsOut.close();
+			// Print solutions.
+			if(session.getSolutions() != null)
+				System.out.println("solutions found: " + session.getSolutions().size());
+			session.closeOut();
+			// Calculate distances. 
 			if(arguments.contains(DISTANCE_KEY)) {
-				Solution<?>[] solutions = session.solutions.toArray(new Solution<?>[session.solutions.size()]);
-				DistanceMatrix matrix = new DistanceMatrix(solutions, session.distanceMetric);
-				String path = ".";
-				if(arguments.contains(OUTPUT_KEY))
-					path = arguments.get(OUTPUT_KEY);
-				PrintWriter csvWriter = new PrintWriter(new File(path + "/" + session.distanceMetric.name + ".csv"));
-				csvWriter.write(matrix.toString());
-				csvWriter.flush();
-				csvWriter.close();
-
+				if(session.getSolutions().size() > 1) {
+					DistanceMatrix matrix = session.getDistance().getMatrix(session.getSolutions());
+					String path = ".";
+					if(arguments.contains(OUTPUT_KEY))
+						path = arguments.get(OUTPUT_KEY);
+					PrintStream csvStream = new PrintStream(new File(path + "/" + session.getDistance().getName() + ".csv"));
+					csvStream.print(matrix.toString());
+					csvStream.close();					
+				}
 			}
 		}
 		catch(Throwable t) {
@@ -474,6 +476,13 @@ public class Main {
 				session.setCost(new WeightedCost.Factory(session.getHeuristic(), arguments.getDouble(HEURISTIC_WEIGHT_KEY, 1)));
 			session.setExplanationPruning(arguments.getBoolean(EXPLANATION_PRUNING_KEY, true));
 		}
+		if(verbose)
+			Worker.run(s -> session.getSearch(), session.getStatus());
+		else
+			session.getSearch();
+		if(verbose)
+			System.out.println(session.getPrinter().toString(session.getSearch()));
+		// Solutions 
 		session.setNumSolutions(arguments.getInt(NUM_SOLUTIONS_KEY, 1));
 		if(arguments.contains(OUTPUT_KEY)) {
 			String outDir = arguments.get(OUTPUT_KEY);
@@ -481,24 +490,17 @@ public class Main {
 				throw Exceptions.notSet(OUTPUT_KEY);
 			if(!(new File(outDir)).isDirectory())
 				throw Exceptions.directoryNotFound(outDir);
-			session.setSolutionsOut(new PrintStream(outDir + "/solutions.txt"));
-		} else
-			session.setSolutionsOut(System.out);
+			session.setOut(new PrintStream(outDir + "/solutions.txt"));
+		}
 		if(arguments.contains(DISTANCE_KEY)) {
 			String metric = arguments.get(DISTANCE_KEY);
 			if(metric == null)
-				metric = ACTION_JACCARD_OPTION;
-			if(metric.equals(ACTION_JACCARD_OPTION))
+				session.setDistance(new ActionJaccardDistance());
+			else if(metric.equals(ACTION_JACCARD_OPTION))
 				session.setDistance(new ActionJaccardDistance());
 			else
 				throw Exceptions.failedToParseCommandLineArgument(DISTANCE_KEY, metric);
 		}
-		if(verbose)
-			Worker.run(s -> session.getSearch(), session.getStatus());
-		else
-			session.getSearch();
-		if(verbose)
-			System.out.println(session.getPrinter().toString(session.getSearch()));
 	}
 	
 	/**

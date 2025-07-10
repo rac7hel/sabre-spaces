@@ -1,10 +1,11 @@
 package r7.sabre.spaces.distance;
 
-import edu.uky.cs.nil.sabre.Solution;
+import r7.sabre.spaces.StoryPlan;
+import r7.sabre.spaces.StorySpace;
 
 /**
- * A distance metric defines the distance between any two {@link Solution solutions} 
- * (stories) as a numeric value.
+ * A distance metric defines the distance between any two {@link StoryPlan story plans} 
+ * as a numeric value.
  * 
  * @author Rachelyn Farrell
  */
@@ -23,12 +24,31 @@ public abstract class DistanceMetric {
 	}
 
 	/**
-	 * Returns a decimal value for the distance between two stories.
+	 * Returns a decimal value for the distance between two {@link StoryPlan stories}.
 	 * 
-	 * @param storyA a solution
-	 * @param storyB another solution
+	 * @param storyA a story 
+	 * @param storyB another story 
 	 * @return the distance between storyA and storyB
 	 */
-	public abstract double getDistance(Solution<?> storyA, Solution<?> storyB);
-		
+	public abstract double getDistance(StoryPlan storyA, StoryPlan storyB);
+	
+	/**
+	 * Creates a {@link DistanceMatrix distance matrix} for the given {@link StorySpace 
+	 * stories} using this distance metric for comparison.
+	 * 
+	 * @param stories the stories to compare
+	 * @return a matrix containing pairwise distance values for all the given stories
+	 */
+	public DistanceMatrix getMatrix(StorySpace stories) {
+		return new DistanceMatrix(stories, this);
+	}
+	
+	/**
+	 * Returns the name of this distance metric
+	 * 
+	 * @return the name of the metric
+	 */
+	public String getName() {
+		return name;
+	}
 }

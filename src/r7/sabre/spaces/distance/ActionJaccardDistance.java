@@ -6,6 +6,7 @@ import edu.uky.cs.nil.sabre.Action;
 import edu.uky.cs.nil.sabre.Signature;
 import edu.uky.cs.nil.sabre.Solution;
 import edu.uky.cs.nil.sabre.comp.CompiledAction;
+import r7.sabre.spaces.StoryPlan;
 
 /**
  * Action Jaccard distance is a {@link DistanceMetric distance metric} that measures the
@@ -35,13 +36,13 @@ public class ActionJaccardDistance extends DistanceMetric {
 	 * @return the Action Jaccard distance between the given solutions
 	 */
 	@Override
-	public double getDistance(Solution<?> storyA, Solution<?> storyB) {
+	public double getDistance(StoryPlan storyA, StoryPlan storyB) {
 		HashSet<Signature> actionsA = new HashSet<Signature>();
 		HashSet<Signature> actionsB = new HashSet<Signature>();
-		for(Action action : storyA)
-			actionsA.add(((CompiledAction)action).signature);
-		for(Action action : storyB)
-			actionsB.add(((CompiledAction)action).signature);		
+		for(int i=0; i<storyA.size(); i++)
+			actionsA.add(storyA.get(i).getAction().signature);
+		for(int i=0; i<storyB.size(); i++)
+			actionsB.add(storyB.get(i).getAction().signature);
 		return 1.0 - ((double) intersect(actionsA, actionsB).size()) / union(actionsA, actionsB).size();
 	}
 

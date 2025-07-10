@@ -1,10 +1,11 @@
 package r7.sabre.spaces.distance;
 
-import edu.uky.cs.nil.sabre.Solution;
+import r7.sabre.spaces.StorySpace;
 
 /**
- * A distance matrix calculates the distance between each pair of stories in a given 
- * {@link Solution solution} set according to the given {@link DistanceMetric distance metric}.
+ * A distance matrix calculates the distance between each pair of stories in a 
+ * given {@link StorySpace story space} according to the given 
+ * {@link DistanceMetric distance metric}.
  * 
  * @author Rachelyn Farrell
  */
@@ -14,18 +15,18 @@ public class DistanceMatrix {
 	public double[][] matrix;
 	
 	/**
-	 * Creates a new distance matrix for the given {@link Solution solution} set with 
+	 * Creates a new distance matrix for the given {@link StorySpace story space} with 
 	 * the given {@link DistanceMetric distance metric}.
 	 * 
 	 * @param stories the list of solutions
 	 * @param metric the distance metric with which to compare solutions
 	 */
-	public DistanceMatrix(Solution<?>[] stories, DistanceMetric metric) {
-		matrix = new double[stories.length][stories.length];
+	public DistanceMatrix(StorySpace stories, DistanceMetric metric) {
+		matrix = new double[stories.size()][stories.size()];
 		for(int i=0; i<matrix.length; i++) {
 			for(int j=0; j<matrix[i].length; j++) {
 				if(j>i)
-					matrix[i][j] = metric.getDistance(stories[i], stories[j]);
+					matrix[i][j] = metric.getDistance(stories.get(i), stories.get(j));
 				else if (j<i) 
 					matrix[i][j] = matrix[j][i];
 			}

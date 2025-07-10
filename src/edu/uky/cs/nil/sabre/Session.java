@@ -3,7 +3,6 @@ package edu.uky.cs.nil.sabre;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
 
 import edu.uky.cs.nil.sabre.comp.CompiledProblem;
 import edu.uky.cs.nil.sabre.io.DefaultParser;
@@ -21,6 +20,9 @@ import edu.uky.cs.nil.sabre.search.Planner;
 import edu.uky.cs.nil.sabre.search.Result;
 import edu.uky.cs.nil.sabre.search.Search;
 import edu.uky.cs.nil.sabre.util.Worker.Status;
+
+import r7.sabre.spaces.StoryPlan;
+import r7.sabre.spaces.StorySpace;
 import r7.sabre.spaces.distance.DistanceMetric;
 
 /**
@@ -184,12 +186,12 @@ public class Session {
 	/** The search's target number of {@link Solution solutions} to find */
 	protected int numSolutions;
 	
-	/** The set of {@link Solution solutions} found */
-	protected ArrayList<Solution<?>> solutions = new ArrayList<>();
+	/** The list of {@link Solution solutions} found */
+	protected StorySpace solutions;
 	
 	/** The output stream for writing solutions */
-	protected PrintStream solutionsOut;
-
+	protected PrintStream out = System.out;
+	
 	/** The {@link DistanceMetric distance metric} with which to compare solutions */
 	protected DistanceMetric distanceMetric;
 	
@@ -309,6 +311,7 @@ public class Session {
 	 */
 	public synchronized void setProblem(Problem problem) {
 		this.problem = problem;
+		this.solutions = new StorySpace(problem);
 		setState(null);
 		setGoal(null);
 		setCompiledProblem(null);
@@ -734,7 +737,15 @@ public class Session {
 	}
 	
 	/**
-	 * Sets the number of solutions the search should find before returning.
+	 * Returns the number of {@link Solution solutions} the search should find before finishing.
+	 * @return the target number of solutions
+	 */
+	public int getNumSolutions() {
+		return numSolutions;
+	}
+	
+	/**
+	 * Sets the number of {@link Solution solutions} the search should find before finishing.
 	 * @param num the number of solutions
 	 */
 	public synchronized void setNumSolutions(int num) {
@@ -745,12 +756,29 @@ public class Session {
 	 * Sets the stream where solutions will be written.
 	 * @param out the output stream
 	 */
-	public synchronized void setSolutionsOut(PrintStream out) {
-		this.solutionsOut = out;
+	public synchronized void setOut(PrintStream out) {
+		this.out = out;
 	}
 	
 	/**
-	 * Sets the distance metric with which to compare stories.
+	 * Closes the session's {@link #out output stream}
+	 */
+	public void closeOut() {
+		this.out.close();
+	}
+	
+	/**
+	 * Returns the {@link DistanceMetric distance metric} with which to compare 
+	 * the {@link #solutions solutions}.
+	 * @return the session's {@link #distanceMetric distance metric}
+	 */
+	public DistanceMetric getDistance() {
+		return this.distanceMetric;
+	}
+	
+	/**
+	 * Sets the {@link DistanceMetric distance metric} with which to compare 
+	 * the {@link #solutions solutions}.
 	 * @param metric the distance metric
 	 */
 	public void setDistance(DistanceMetric metric) {
@@ -812,9 +840,9 @@ public class Session {
 	public synchronized Result<?> getResult() { 
 		result = getSearch().get(getStatus());
 		if(result.getSuccess()) {
-			solutions.add(result.solution);
-			solutionsOut.println(getPrinter().toString(getPlan(null)));
-			solutionsOut.flush();
+			solutions.add(new StoryPlan(result.solution));
+			out.println(getPrinter().toString(getPlan(null)));
+			out.flush();
 		} 
 		return result;
 	}
@@ -872,7 +900,7 @@ public class Session {
 	 * 
 	 * @return the solutions from all runs of the search
 	 */
-	public ArrayList<Solution<?>> getSolutions(){
+	public StorySpace getSolutions(){
 		return solutions;
 	}
 	
