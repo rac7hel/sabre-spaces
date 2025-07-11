@@ -23,6 +23,7 @@ public class StoryPlan {
 			actions[i] = new StoryAction(solution);
 			solution = solution.next();
 		}
+		// TODO: for each action, set its causal ancestors 
 	}
 	
 	public StoryAction get(int i) {

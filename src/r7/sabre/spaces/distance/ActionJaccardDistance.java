@@ -7,6 +7,7 @@ import edu.uky.cs.nil.sabre.Signature;
 import edu.uky.cs.nil.sabre.Solution;
 import edu.uky.cs.nil.sabre.comp.CompiledAction;
 import r7.sabre.spaces.StoryPlan;
+import r7.sabre.spaces.StorySpace;
 
 /**
  * Action Jaccard distance is a {@link DistanceMetric distance metric} that measures the
@@ -31,9 +32,9 @@ public class ActionJaccardDistance extends DistanceMetric {
 	 * Returns the Jaccard distance between two sets of {@link 
 	 * CompiledAction actions}, those in story A and those in story B.
 	 * 
-	 * @param storyA a solution
-	 * @param storyB another solution
-	 * @return the Action Jaccard distance between the given solutions
+	 * @param storyA a story 
+	 * @param storyB another story
+	 * @return the Action Jaccard distance between the given stories
 	 */
 	@Override
 	public double getDistance(StoryPlan storyA, StoryPlan storyB) {
@@ -79,5 +80,4 @@ public class ActionJaccardDistance extends DistanceMetric {
 		return union;
 	}
 
-	
 }

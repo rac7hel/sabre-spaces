@@ -35,5 +35,5 @@ public class StorySpace {
 	public ArrayList<StoryPlan> getStories(){
 		return stories;
 	}
-	
+
 }

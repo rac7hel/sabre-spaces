@@ -51,4 +51,6 @@ public abstract class DistanceMetric {
 	public String getName() {
 		return name;
 	}
+	
+	public void initialize(StorySpace storySpace) {}
 }

@@ -18,6 +18,7 @@ import edu.uky.cs.nil.sabre.util.CommandLineArguments;
 import edu.uky.cs.nil.sabre.util.Worker;
 
 import r7.sabre.spaces.distance.DistanceMatrix;
+import r7.sabre.spaces.distance.SalienceDistance;
 import r7.sabre.spaces.distance.ActionJaccardDistance;
 
 /**
@@ -191,7 +192,12 @@ public class Main {
 	 * The abbreviation for the {@link ActionJaccardDistance action jaccard} distance metric
 	 */
 	public static final String ACTION_JACCARD_OPTION = "aj";
-
+	
+	/**
+	 * The abbreviation for the {@link SalienceDistance salience} distance metric
+	 */
+	public static final String SALIENCE_DISTANCE_OPTION = "sd";
+	
 	
 	private static final String pad(String string) {
 		return String.format("%-13s", string);
@@ -233,7 +239,8 @@ public class Main {
 		pad(NUM_SOLUTIONS_KEY + " NUMBER") + 			"number of solutions to search for; 0 for unlimited (default 1)\n" + 
 		pad(OUTPUT_KEY + " PATH") +                     "a directory for the output files\n" +
 		pad(DISTANCE_KEY + " OPTION") +                 "calculate distances between solutions using the given metric; options include:\n" + 
-		pad("   " + ACTION_JACCARD_OPTION) +            "action jaccard distance (default)";
+		pad("   " + ACTION_JACCARD_OPTION) +            "action jaccard distance (default)\n" +
+		pad("   " + SALIENCE_DISTANCE_OPTION) +         "salience distance";
 
 	/**
 	 * A functional interface for changing a setting in a {@link Session
@@ -411,19 +418,19 @@ public class Main {
 			// Print solutions.
 			if(session.getSolutions() != null)
 				System.out.println("solutions found: " + session.getSolutions().size());
-			session.closeOut();
 			// Calculate distances. 
 			if(arguments.contains(DISTANCE_KEY)) {
 				if(session.getSolutions().size() > 1) {
-					DistanceMatrix matrix = session.getDistance().getMatrix(session.getSolutions());
+					session.getDistance().initialize(session.getSolutions());
 					String path = ".";
 					if(arguments.contains(OUTPUT_KEY))
 						path = arguments.get(OUTPUT_KEY);
 					PrintStream csvStream = new PrintStream(new File(path + "/" + session.getDistance().getName() + ".csv"));
-					csvStream.print(matrix.toString());
-					csvStream.close();					
+					csvStream.print(session.getDistance().getMatrix(session.getSolutions()).toString());
+					csvStream.close();
 				}
 			}
+			session.closeOut();
 		}
 		catch(Throwable t) {
 			if(t instanceof RuntimeException && t.getCause() != null)
@@ -498,6 +505,8 @@ public class Main {
 				session.setDistance(new ActionJaccardDistance());
 			else if(metric.equals(ACTION_JACCARD_OPTION))
 				session.setDistance(new ActionJaccardDistance());
+			else if(metric.equals(SALIENCE_DISTANCE_OPTION))
+				session.setDistance(new SalienceDistance(session.getProblem()));
 			else
 				throw Exceptions.failedToParseCommandLineArgument(DISTANCE_KEY, metric);
 		}

@@ -10,11 +10,19 @@ import edu.uky.cs.nil.sabre.logic.Expression;
  */
 public class CharacterGoal {
 	
-	protected Character character;
-	protected Expression goal;
+	public Character character;
+	public Expression goal;
 	
 	public CharacterGoal(Character character, Expression goal){
 		this.character = character;
 		this.goal = goal;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if(!(o instanceof CharacterGoal))
+			return false;
+		CharacterGoal g = ((CharacterGoal)o);
+		return g.character.equals(this.character) && g.goal.equals(this.goal);
 	}
 }
