@@ -52,5 +52,10 @@ public abstract class DistanceMetric {
 		return name;
 	}
 	
+	/**
+	 * Initializes the distance metric for a specific set of {@link StorySpace solutions}.
+	 * 
+	 * @param storySpace the solutions with which to initialize the metric
+	 */
 	public void initialize(StorySpace storySpace) {}
 }

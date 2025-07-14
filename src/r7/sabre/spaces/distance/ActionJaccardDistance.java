@@ -2,12 +2,10 @@ package r7.sabre.spaces.distance;
 
 import java.util.HashSet;
 
-import edu.uky.cs.nil.sabre.Action;
 import edu.uky.cs.nil.sabre.Signature;
 import edu.uky.cs.nil.sabre.Solution;
 import edu.uky.cs.nil.sabre.comp.CompiledAction;
 import r7.sabre.spaces.StoryPlan;
-import r7.sabre.spaces.StorySpace;
 
 /**
  * Action Jaccard distance is a {@link DistanceMetric distance metric} that measures the

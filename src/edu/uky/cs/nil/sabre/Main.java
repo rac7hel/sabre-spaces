@@ -428,6 +428,8 @@ public class Main {
 					PrintStream csvStream = new PrintStream(new File(path + "/" + session.getDistance().getName() + ".csv"));
 					csvStream.print(session.getDistance().getMatrix(session.getSolutions()).toString());
 					csvStream.close();
+					if(arguments.get(DISTANCE_KEY).equals(SALIENCE_DISTANCE_OPTION))
+						((SalienceDistance)session.getDistance()).printVectors(session.getSolutions(), path);
 				}
 			}
 			session.closeOut();
